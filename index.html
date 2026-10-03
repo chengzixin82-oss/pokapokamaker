@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#fff9fa" />
+    <meta name="description" content="波点生成器 pokapoka —— 纯前端离线图案背景生成工具：波点 / 条纹 / 维希格 / 铁艺花砖 / 贴纸拼贴，可调颜色、间距、角度、透明度，一键导出高清图片。完全在浏览器本地运行，可添加到主屏幕离线使用。" />
+    <title>pokapoka · 波点生成器</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23e99ba9'/%3E%3C/svg%3E" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="assets/icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="波点生成器" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="pokapoka · 波点生成器" />
+    <meta property="og:description" content="离线可用的图案背景生成工具：波点 / 条纹 / 维希格 / 铁艺花砖 / 贴纸拼贴，调好即导出高清图。" />
+    <meta property="og:image" content="assets/icon-512.png" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="preview-section" aria-labelledby="app-title">
+        <div class="title-row">
+          <div>
+            <p class="eyebrow">OFFLINE PATTERN MAKER</p>
+            <h1 id="app-title">˖ . ݁𝜗𝜚.波点生成器 ݁₊</h1>
+          </div>
+        </div>
+
+        <div class="iron-frame">
+          <svg class="iron-corner corner-tl" viewBox="0 0 92 92" aria-hidden="true"><path d="M5 71C8 24 46 12 69 29c20 15 2 43-18 32C36 52 49 35 64 38c19 4 20 37-5 44"/><path d="M6 85C26 87 36 75 31 62c-5-15-25-10-22 5"/></svg>
+          <svg class="iron-corner corner-tr" viewBox="0 0 92 92" aria-hidden="true"><path d="M5 71C8 24 46 12 69 29c20 15 2 43-18 32C36 52 49 35 64 38c19 4 20 37-5 44"/><path d="M6 85C26 87 36 75 31 62c-5-15-25-10-22 5"/></svg>
+          <svg class="iron-corner corner-bl" viewBox="0 0 92 92" aria-hidden="true"><path d="M5 71C8 24 46 12 69 29c20 15 2 43-18 32C36 52 49 35 64 38c19 4 20 37-5 44"/><path d="M6 85C26 87 36 75 31 62c-5-15-25-10-22 5"/></svg>
+          <svg class="iron-corner corner-br" viewBox="0 0 92 92" aria-hidden="true"><path d="M5 71C8 24 46 12 69 29c20 15 2 43-18 32C36 52 49 35 64 38c19 4 20 37-5 44"/><path d="M6 85C26 87 36 75 31 62c-5-15-25-10-22 5"/></svg>
+          <div class="canvas-stage" id="canvasStage">
+            <canvas id="previewCanvas" aria-label="规则图案实时预览"></canvas>
+            <span class="canvas-badge" id="canvasBadge">1000 × 1000 px</span>
+            <span class="drag-hint" id="dragHint">拖拽图案调整位置</span>
+            <div class="canvas-tools" id="canvasTools">
+              <button class="tool-button" id="undoButton" type="button" aria-label="撤回" title="撤回" disabled>↶</button>
+              <button class="tool-button" id="redoButton" type="button" aria-label="前进" title="前进" disabled>↷</button>
+              <button class="tool-button" id="eraserButton" type="button" aria-label="橡皮擦" title="橡皮擦：点击/拖动擦除图案">
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 15.5 3.8 9.8a1.7 1.7 0 0 1 0-2.4l4-4a1.7 1.7 0 0 1 2.4 0l5 5a1.7 1.7 0 0 1 0 2.4l-4.4 4.4a1.7 1.7 0 0 1-1.3.5z"/><path d="M6.5 7.2 12 12.7"/><path d="M9.4 15.6h7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls-section" aria-label="图案设置">
+        <div class="lace-divider" aria-hidden="true"></div>
+        <div class="controls-actions">
+          <button class="button secondary reset-button" id="resetButton" type="button">重置参数</button>
+          <label class="header-format" for="exportFormat">导出格式
+            <select id="exportFormat"><option value="png">PNG</option><option value="jpeg">JPG</option></select>
+          </label>
+          <button class="button primary header-export" id="exportButton" type="button"><span class="petal-loader" aria-hidden="true"></span><span class="button-text">导出图片</span></button>
+          <button class="button share-note header-export" id="shareNoteButton" type="button">发小红书</button>
+        </div>
+        <div class="sticker-bar" id="stickerBar" hidden>
+          <div class="sb-extra" id="sbOpacityRow" hidden>
+            <input id="stickerOpacity" type="range" min="10" max="100" value="100" />
+            <span class="sb-extra-val" id="sbOpacityVal">100%</span>
+          </div>
+          <div class="sb-extra" id="sbOrderRow" hidden>
+            <button class="sb-action sb-sub" data-op="up" type="button">上移</button>
+            <button class="sb-action sb-sub" data-op="down" type="button">下移</button>
+            <button class="sb-action sb-sub" data-op="top" type="button">置顶</button>
+            <button class="sb-action sb-sub" data-op="bottom" type="button">置底</button>
+          </div>
+          <div class="sb-main">
+            <button class="sb-action" data-op="copy" type="button">复制</button>
+            <button class="sb-action sb-toggle" id="sbOpacityBtn" type="button">透明度</button>
+            <button class="sb-action sb-toggle" id="sbOrderBtn" type="button">图层顺序</button>
+          </div>
+        </div>
+        <div class="controls-scroller">
+          <div class="tab-pane" id="tabPattern">
+            <fieldset class="control-card">
+              <legend><span class="rose-dot">✦</span>画布</legend>
+              <div class="split-inputs">
+                <label>宽度 <input id="canvasWidth" type="number" min="1" max="5000" value="1000" inputmode="numeric" /> <em>px</em></label>
+                <label>高度 <input id="canvasHeight" type="number" min="1" max="5000" value="1000" inputmode="numeric" /> <em>px</em></label>
+              </div>
+              <div class="dpi-field">
+                <span class="dpi-left">分辨率 <span class="dpi-input"><input id="resolutionDpi" type="number" min="72" max="1200" value="300" inputmode="numeric" /> <em>DPI</em></span></span>
+                <label class="check-row"><input id="lockRatio" type="checkbox" checked /> <span>锁定宽高比例</span></label>
+              </div>
+              <label class="upload-area bg-upload" id="bgUploadArea" for="bgUpload">
+                <span class="upload-plus">+</span>
+                <span id="bgUploadLabel">上传背景图（画布跟随图片尺寸）</span>
+                <input id="bgUpload" type="file" accept="image/png,image/jpeg,image/webp" />
+              </label>
+              <button class="text-button" id="removeBackground" type="button" hidden>移除背景图</button>
+            </fieldset>
+
+          <fieldset class="control-card color-card">
+            <legend><span class="rose-dot">✦</span>颜色</legend>
+            <div class="color-columns">
+              <div class="color-section" id="backgroundColorSection">
+                <div class="color-heading"><span>背景颜色</span><label class="transparent-toggle"><input id="backgroundTransparent" type="checkbox" /><span>透明背景</span></label></div>
+                <div class="color-row"><button id="backgroundPicker" class="color-picker" type="button" style="background:#ffffff" aria-label="背景颜色"></button><span class="color-tip">点击圆圈选色</span></div>
+              </div>
+              <div class="color-section pattern-color-section">
+                <div class="color-heading"><span>图案颜色</span></div>
+                <div class="color-row"><button id="patternPicker" class="color-picker" type="button" style="background:#f7c7d5" aria-label="图案颜色"></button><span class="color-tip">点击圆圈选色</span></div>
+              </div>
+            </div>
+            <div class="swap-row"><button class="swap-button" id="swapColors" type="button" aria-label="互换背景与图案颜色"><span class="swap-icon" aria-hidden="true">⇄</span>互换背景与图案颜色</button></div>
+          </fieldset>
+
+          <fieldset class="control-card pattern-card">
+            <legend><span class="rose-dot">✦</span>图案</legend>
+            <div class="pattern-select-field">
+              <span class="field-label">内置样式</span>
+              <button class="pattern-select-btn" id="patternSelectBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <canvas class="ps-icon" id="patternSelectIcon" width="26" height="26" aria-hidden="true"></canvas>
+                <span class="ps-name" id="patternSelectName">圆形</span>
+                <span class="ps-arrow" aria-hidden="true">▾</span>
+              </button>
+            </div>
+            <label class="range-field">不透明度
+              <span><input id="patternOpacityRange" type="range" min="5" max="100" value="100" /><input id="patternOpacity" type="number" min="5" max="100" value="100" /> <em>%</em></span>
+            </label>
+            <label class="range-field">柔光模糊
+              <span><input id="patternBlurRange" type="range" min="0" max="20" value="0" /><input id="patternBlur" type="number" min="0" max="20" value="0" /> <em>px</em></span>
+            </label>
+            <label class="upload-area" id="uploadArea" for="customUpload">
+              <span class="upload-plus">+</span>
+              <span id="uploadLabel">上传自定义图案（PNG/SVG）</span>
+              <input id="customUpload" type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" />
+            </label>
+            <button class="text-button" id="removeCustom" type="button" hidden>移除自定义图案</button>
+          </fieldset>
+
+
+          <fieldset class="control-card range-card">
+            <legend><span class="rose-dot">✦</span>尺寸与间距</legend>
+            <label class="range-field">图案大小
+              <span><input id="patternSizeRange" type="range" min="1" max="800" value="30" /><input id="patternSize" type="number" min="1" max="800" value="30" /> <em>px</em></span>
+            </label>
+            <label class="range-field">X 间距
+              <span><input id="gapXRange" type="range" min="0" max="800" value="35" /><input id="gapX" type="number" min="0" max="800" value="35" /> <em>px</em></span>
+            </label>
+            <label class="range-field">Y 间距
+              <span><input id="gapYRange" type="range" min="0" max="800" value="35" /><input id="gapY" type="number" min="0" max="800" value="35" /> <em>px</em></span>
+            </label>
+            <label class="range-field">图案角度
+              <span><input id="patternAngleRange" type="range" min="0" max="360" value="0" /><input id="patternAngle" type="number" min="0" max="360" value="0" /> <em>°</em></span>
+            </label>
+          </fieldset>
+          </div>
+
+          <div class="tab-pane" id="tabSticker" hidden>
+            <fieldset class="control-card sticker-card">
+              <legend><span class="rose-dot">✦</span>拼贴</legend>
+              <div class="sticker-grid" id="stickerGrid">
+                <label class="gst-item gst-add" for="stickerUpload" aria-label="导入贴纸图片（可多选）">
+                  <span class="upload-plus">+</span>
+                </label>
+                <input id="stickerUpload" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" multiple hidden />
+              </div>
+              <div class="sticker-list" id="stickerList"></div>
+            </fieldset>
+          </div>
+        </div>
+        <div class="page-tabs" role="tablist">
+          <button class="page-tab is-active" id="tabPatternBtn" type="button" role="tab" aria-selected="true">波点</button>
+          <button class="page-tab" id="tabStickerBtn" type="button" role="tab" aria-selected="false">拼贴</button>
+        </div>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="js/patterns.js" defer></script>
+    <script src="js/tiles.js" defer></script>
+    <script src="js/color.js" defer></script>
+    <script src="js/renderer.js" defer></script>
+    <script src="js/stickers.js" defer></script>
+    <script src="js/export.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="js/editor.js" defer></script>
+    <script>
+    // PWA: register the service worker on real deploys (Vercel) and localhost.
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' ||
+        location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {});
+      });
+    }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "pokapoka · 波点生成器",
+  "short_name": "波点生成器",
+  "description": "离线可用的图案背景生成工具：波点、条纹、维希格、铁艺花砖、贴纸拼贴，一键导出高清图片。",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff9fa",
+  "theme_color": "#fff9fa",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

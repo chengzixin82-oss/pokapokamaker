@@ -1,0 +1,13 @@
+# WorkBuddy 工作数据（勿提交）
+.workbuddy/
+.skill/
+
+# 小工具容器部署包（构建产物，另行保管）
+*.zip
+
+# 早期构建副本
+dist/
+
+# 系统文件
+.DS_Store
+Thumbs.db
