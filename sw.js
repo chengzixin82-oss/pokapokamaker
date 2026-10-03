@@ -1,6 +1,6 @@
 // pokapoka service worker: cache-first app shell for full offline use.
 // Bump CACHE_VERSION whenever app files change so clients refresh.
-var CACHE_VERSION = 'pokapoka-v1';
+var CACHE_VERSION = 'pokapoka-v2';
 var APP_SHELL = [
   './',
   './index.html',
