@@ -45,25 +45,12 @@
     popup=document.createElement('div');
     popup.className='cp-pop';
     popup.innerHTML='<div class="cp-sv"><span class="cp-cursor"></span></div>'+
-      '<div class="cp-mid"><span class="cp-preview"></span><input class="cp-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色值" /><button class="cp-eyedrop" type="button" aria-label="屏幕取色" title="屏幕吸管取色"><svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.6 3.4a2.25 2.25 0 0 1 3.2 3.2l-1.7 1.7-3.2-3.2 1.7-1.7z"/><path d="M10.9 5.1 4.5 11.5c-.3.3-.5.7-.6 1.1l-.5 2.3a.55.55 0 0 0 .7.7l2.3-.5c.4-.1.8-.3 1.1-.6l6.4-6.4"/></svg></button></div>'+
+      '<div class="cp-mid"><span class="cp-preview"></span><input class="cp-hex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色值" /></div>'+
       '<div class="cp-hue"><span class="cp-hue-cursor"></span></div>';
     document.body.appendChild(popup);
     svEl=popup.querySelector('.cp-sv'); svCursor=popup.querySelector('.cp-cursor');
     hueEl=popup.querySelector('.cp-hue'); hueCursor=popup.querySelector('.cp-hue-cursor');
     preview=popup.querySelector('.cp-preview'); hexInput=popup.querySelector('.cp-hex');
-    // Eyedropper: pick any on-screen colour (Chromium secure contexts only).
-    popup.querySelector('.cp-eyedrop').addEventListener('click', function () {
-      if (!window.EyeDropper) {
-        if (window.App && window.App.showToast) window.App.showToast('当前浏览器不支持屏幕取色');
-        return;
-      }
-      var self=this;
-      new window.EyeDropper().open().then(function (result) {
-        var rgb=hexToRgb(result && result.sRGBHex);
-        if (rgb) { hsv=rgbToHsv(rgb); refresh(); }
-        self.blur();
-      }).catch(function () { /* user cancelled */ });
-    });
     bindDrag(svEl, function (e) {
       var r=svEl.getBoundingClientRect();
       hsv.s=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
