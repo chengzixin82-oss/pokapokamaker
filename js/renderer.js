@@ -32,33 +32,41 @@
     tintedTiles[key] = canvas;
     return canvas;
   }
-  // Deterministic PRNG so leopard cells render identically across preview,
-  // export and re-renders (same contract as the eraser's row_col keys).
-  function mulberry32(seed) {
-    return function () {
-      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
-      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  // One lattice cell of the leopard pattern: one big two-colour spot plus an
-  // optional satellite dot/crescent. Offsets stay inside the cell so spots can
-  // never overlap across cell borders -> seamless at any X/Y period.
-  function drawLeopardCell(ctx, x, y, px, py, state, row, col) {
-    var P = window.Patterns;
-    var rand = mulberry32(((row * 73856093) ^ (col * 19349663)) | 0);
-    var base = Math.min(px, py) / 2;
-    var color = state.patternColor, color2 = state.patternColor2 || null;
-    var dx = (rand() - 0.5) * px * 0.24, dy = (rand() - 0.5) * py * 0.24;
-    var r = base * (0.5 + 0.24 * rand());
-    P.leopardSpot(ctx, x + dx, y + dy, r, rand, color, color2);
-    if (rand() < 0.45) {
-      var bx = x + (rand() - 0.5) * px * 0.55, by = y + (rand() - 0.5) * py * 0.55;
-      var br = base * (0.12 + 0.16 * rand());
-      if (rand() < 0.5) P.leopardSpot(ctx, bx, by, br, rand, color, null);
-      else P.leopardArc(ctx, bx, by, br, rand, color);
+  // Two-colour tiles (leopard): outer ring + inner core masks live in tiles.js as
+  // separate white+alpha data-URIs; compose them tinted with patternColor/patternColor2
+  // and cache per colour pair. Drawing one composed image per cell keeps preview,
+  // export and re-renders pixel-identical.
+  function getTwoColorTile(state, outerType, innerType) {
+    var outer = getTileImage(outerType), inner = getTileImage(innerType);
+    if (!outer || !inner) return null;
+    var key = outerType + '|' + state.patternColor + '|' + (state.patternColor2 || ''), cached = tintedTiles[key];
+    if (cached) return cached;
+    var w = outer.naturalWidth, h = outer.naturalHeight;
+    function tintedLayer(img, color) {
+      var t = document.createElement('canvas'); t.width = w; t.height = h;
+      var tc = t.getContext('2d');
+      tc.drawImage(img, 0, 0);
+      tc.globalCompositeOperation = 'source-in';
+      tc.fillStyle = color;
+      tc.fillRect(0, 0, w, h);
+      return t;
     }
+    var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    var c2 = canvas.getContext('2d');
+    c2.drawImage(tintedLayer(outer, state.patternColor), 0, 0);
+    c2.drawImage(tintedLayer(inner, state.patternColor2 || state.patternColor), 0, 0);
+    tintedTiles[key] = canvas;
+    return canvas;
+  }
+  // Full-texture tiles (argyle/leopard) contain many motifs per repeat, so one
+  // lattice cell must span TILE_SCALE[type] base periods — otherwise the whole
+  // texture gets squeezed into a single patternSize+gap cell and turns to noise.
+  // [x,y] multipliers keep the tile's natural aspect at the default gaps.
+  var TILE_SCALE = { argyle: [3, 3], leopard: [6, 8] };
+  function effPeriod(state) {
+    var x = Math.max(1, state.patternSize + state.gapX), y = Math.max(1, state.patternSize + state.gapY);
+    var sc = TILE_SCALE[state.patternType];
+    return sc ? { x: x * sc[0], y: y * sc[1] } : { x: x, y: y };
   }
   function drawPattern(ctx, state, width, height, scale) {
     scale = scale || 1; ctx.save(); ctx.scale(scale,scale);
@@ -86,7 +94,10 @@
     var diag = Math.sqrt(width * width + height * height);
     var ex0 = (width - diag) / 2, ex1 = width + (diag - width) / 2, ey0 = (height - diag) / 2, ey1 = height + (diag - height) / 2;
     var isTile = !!tileSource(state.patternType);
-    var periodX=Math.max(1,state.patternSize+state.gapX), periodY=Math.max(1,state.patternSize+state.gapY), startRow=Math.floor((ey0-state.offsetY-state.patternSize)/periodY)-1, endRow=Math.ceil((ey1-state.offsetY+state.patternSize)/periodY)+1;
+    var isLeopard = state.patternType === 'leopard';
+    var periodX=Math.max(1,state.patternSize+state.gapX), periodY=Math.max(1,state.patternSize+state.gapY);
+    if (isTile || isLeopard) { var tsc = TILE_SCALE[state.patternType] || [1,1]; periodX *= tsc[0]; periodY *= tsc[1]; }
+    var startRow=Math.floor((ey0-state.offsetY)/periodY)-2, endRow=Math.ceil((ey1-state.offsetY)/periodY)+2;
     if(state.patternType==='gingham'){
       // Gingham weave from a single colour: vertical + horizontal bands at half
       // alpha, then a full-alpha square stamped at each crossing so the grid reads
@@ -99,12 +110,11 @@
       for(var gr=startRow;gr<=endRow;gr++){ var gby=state.offsetY+gr*periodY; ctx.fillRect(ex0, gby-state.patternSize/2, ex1-ex0, state.patternSize); }
       ctx.globalAlpha=alpha;
       for(var gr2=startRow;gr2<=endRow;gr2++){ var gcy=state.offsetY+gr2*periodY; for(var gc2=gCol0;gc2<=gCol1;gc2++){ var gcx=state.offsetX+gc2*periodX; ctx.fillRect(gcx-state.patternSize/2, gcy-state.patternSize/2, state.patternSize, state.patternSize); } }
-    } else for(var row=startRow; row<=endRow; row++){ var y=state.offsetY+row*periodY; var rowShift=(state.patternType==='stripe'||isTile)?0:(Math.abs(row)%2)*periodX/2; var startCol=Math.floor((ex0-state.offsetX-rowShift-state.patternSize)/periodX)-1, endCol=Math.ceil((ex1-state.offsetX-rowShift+state.patternSize)/periodX)+1; for(var col=startCol;col<=endCol;col++){ var x=state.offsetX+rowShift+col*periodX;
+    } else for(var row=startRow; row<=endRow; row++){ var y=state.offsetY+row*periodY; var rowShift=(state.patternType==='stripe'||isTile||isLeopard)?0:(Math.abs(row)%2)*periodX/2; var startCol=Math.floor((ex0-state.offsetX-rowShift)/periodX)-2, endCol=Math.ceil((ex1-state.offsetX-rowShift)/periodX)+2; for(var col=startCol;col<=endCol;col++){ var x=state.offsetX+rowShift+col*periodX;
       // Eraser: each lattice cell has a deterministic row_col key; erased cells are skipped.
       if(state.patternType!=='stripe' && state.erased && state.erased[row+'_'+col]) continue;
       if(state.patternType==='stripe'){ ctx.fillStyle=state.patternColor; ctx.fillRect(x-state.patternSize/2, y-periodY/2-1, state.patternSize, periodY+2); }
-      else if(state.patternType==='argyle'){ ctx.fillStyle=state.patternColor; ctx.beginPath(); ctx.moveTo(x,y-periodY/2); ctx.lineTo(x+periodX/2,y); ctx.lineTo(x,y+periodY/2); ctx.lineTo(x-periodX/2,y); ctx.closePath(); ctx.fill(); }
-      else if(state.patternType==='leopard'){ drawLeopardCell(ctx,x,y,periodX,periodY,state,row,col); }
+      else if(state.patternType==='leopard'){ var lt=getTwoColorTile(state,'leopardOuter','leopardInner'); if(lt){ ctx.drawImage(lt, x-periodX/2-0.5, y-periodY/2-0.5, periodX+1, periodY+1); } }
       else if(isTile){ var tinted=getTintedTile(state,state.patternType); if(tinted){ ctx.drawImage(tinted, x-periodX/2-0.5, y-periodY/2-0.5, periodX+1, periodY+1); } }
       else if(state.patternType==='custom' && state.customImage){var d=customDimensions(state.customImage,state.patternSize);ctx.drawImage(state.customImage,x-d.w/2,y-d.h/2,d.w,d.h);}
       else{(window.Patterns[state.patternType]||window.Patterns.circle)(ctx,x,y,state.patternSize,state.patternColor);} } }
@@ -128,5 +138,5 @@
     }
     ctx.restore();
   }
-  window.PatternRenderer = { drawPattern: drawPattern, onTilesLoaded: null };
+  window.PatternRenderer = { drawPattern: drawPattern, onTilesLoaded: null, effPeriod: effPeriod };
 })();

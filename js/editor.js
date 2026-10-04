@@ -91,9 +91,10 @@
     var a = -(state.patternAngle || 0) * Math.PI / 180, cx = state.canvasWidth / 2, cy = state.canvasHeight / 2;
     var dx = pt.x - cx, dy = pt.y - cy;
     var rx = cx + dx * Math.cos(a) - dy * Math.sin(a), ry = cy + dx * Math.sin(a) + dy * Math.cos(a);
-    var periodX = Math.max(1, state.patternSize + state.gapX), periodY = Math.max(1, state.patternSize + state.gapY);
+    var eff = window.PatternRenderer && window.PatternRenderer.effPeriod ? window.PatternRenderer.effPeriod(state) : { x: Math.max(1, state.patternSize + state.gapX), y: Math.max(1, state.patternSize + state.gapY) };
+    var periodX = eff.x, periodY = eff.y;
     var row = Math.round((ry - state.offsetY) / periodY);
-    var isTile = window.PatternTiles && window.PatternTiles.sources && window.PatternTiles.sources[state.patternType];
+    var isTile = (window.PatternTiles && window.PatternTiles.sources && window.PatternTiles.sources[state.patternType]) || state.patternType === 'leopard';
     var rowShift = isTile ? 0 : (Math.abs(row) % 2) * periodX / 2;
     var col = Math.round((rx - state.offsetX - rowShift) / periodX);
     return row + '_' + col;
