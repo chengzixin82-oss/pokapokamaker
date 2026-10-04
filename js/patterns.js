@@ -44,7 +44,61 @@
   function clover(ctx, x, y, size, color) { trace(ctx, x, y, size, color, CLOVER); }
   function cross(ctx, x, y, size, color) { trace(ctx, x, y, size, color, CROSS); }
 
+  // Argyle diamond: width == size, height == size (renderer stretches it to the
+  // full period cell so X/Y gap sliders stretch the lattice horizontally/vertically).
+  function diamond(ctx, x, y, size, color) {
+    var hw = size / 2, hh = size / 2;
+    ctx.fillStyle = color; ctx.beginPath();
+    ctx.moveTo(x, y - hh); ctx.lineTo(x + hw, y); ctx.lineTo(x, y + hh); ctx.lineTo(x - hw, y);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Leopard spot: organic closed blob. points = number of control vertices,
+  // wobble = per-vertex radius jitter (seeded outside for deterministic tiling).
+  function blobPath(ctx, cx, cy, radius, points, wobble, rand, rot) {
+    var pts = [], i, a, r;
+    for (i = 0; i < points; i++) {
+      a = rot + (i / points) * Math.PI * 2;
+      r = radius * (1 - wobble + rand() * wobble * 2);
+      pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    }
+    // Smooth closed curve through midpoints (quadratic through vertices).
+    ctx.beginPath();
+    var mid0 = [(pts[0][0] + pts[points - 1][0]) / 2, (pts[0][1] + pts[points - 1][1]) / 2];
+    ctx.moveTo(mid0[0], mid0[1]);
+    for (i = 0; i < points; i++) {
+      var nxt = pts[(i + 1) % points];
+      var mid = [(pts[i][0] + nxt[0]) / 2, (pts[i][1] + nxt[1]) / 2];
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], mid[0], mid[1]);
+    }
+    ctx.closePath();
+  }
+  // One leopard spot: colour-1 ring + colour-2 core (color2 optional for icons).
+  function leopardSpot(ctx, cx, cy, radius, rand, color, color2) {
+    var rot = rand() * Math.PI * 2;
+    blobPath(ctx, cx, cy, radius, 9, 0.28, rand, rot);
+    ctx.fillStyle = color; ctx.fill();
+    if (color2) {
+      blobPath(ctx, cx + (rand() - 0.5) * radius * 0.3, cy + (rand() - 0.5) * radius * 0.3, radius * 0.52, 8, 0.3, rand, rot + 1);
+      ctx.fillStyle = color2; ctx.fill();
+    }
+  }
+  // Leopard crescent / small stroke blob.
+  function leopardArc(ctx, cx, cy, radius, rand, color) {
+    var a0 = rand() * Math.PI * 2, len = Math.PI * (0.4 + rand() * 0.5);
+    ctx.strokeStyle = color; ctx.lineWidth = radius * 0.9; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(cx, cy, radius, a0, a0 + len); ctx.stroke();
+  }
+  function leopard(ctx, x, y, size, color, color2) {
+    var seedState = 12345; // fixed shape for icons
+    var rand = function () { seedState = (seedState * 1103515245 + 12345) & 0x7fffffff; return seedState / 0x7fffffff; };
+    leopardSpot(ctx, x - size * 0.18, y - size * 0.1, size * 0.26, rand, color, color2);
+    leopardSpot(ctx, x + size * 0.2, y + size * 0.16, size * 0.2, rand, color, color2);
+    leopardArc(ctx, x + size * 0.12, y - size * 0.24, size * 0.12, rand, color);
+  }
+
   window.Patterns = {
-    circle: circle, star: star, heart: heart, paw: paw, droplet: droplet, clover: clover, cross: cross
+    circle: circle, star: star, heart: heart, paw: paw, droplet: droplet, clover: clover, cross: cross,
+    diamond: diamond, leopard: leopard, leopardSpot: leopardSpot, leopardArc: leopardArc
   };
 })();

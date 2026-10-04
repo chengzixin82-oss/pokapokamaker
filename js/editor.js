@@ -30,7 +30,7 @@
   var undoStack = [], redoStack = [];
   // Parameter ops (colors / sliders / pattern drag) share the same undo stack:
   // each op stores before/after snapshots of the tunable fields below.
-  var PARAM_FIELDS = ['backgroundColor','patternColor','patternSize','gapX','gapY','patternAngle','patternOpacity','patternBlur','offsetX','offsetY'];
+  var PARAM_FIELDS = ['backgroundColor','backgroundColor2','backgroundGradient','patternColor','patternColor2','patternSize','gapX','gapY','patternAngle','patternOpacity','patternBlur','offsetX','offsetY'];
   var pendingParam = null, paramTimer = 0;
   function snapshotParams() { var s = {}; for (var i = 0; i < PARAM_FIELDS.length; i++) s[PARAM_FIELDS[i]] = state[PARAM_FIELDS[i]]; return s; }
   function sameParams(a, b) { for (var i = 0; i < PARAM_FIELDS.length; i++) if (a[PARAM_FIELDS[i]] !== b[PARAM_FIELDS[i]]) return false; return true; }
